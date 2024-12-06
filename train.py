@@ -1,49 +1,44 @@
 import torch
-import torch.optim as optim
 import torchvision
 from torch.utils.data import DataLoader
 import os
 from datasets import RodentDataset
+from transforms import ToTensor
 from engine import train_one_epoch, evaluate
-from utils import MetricLogger, reduce_dict
+import utils
 
 def main():
-    # Setup paths
-    data_dir = 'data'
-    image_dir = os.path.join(data_dir, 'images')
-    tfrecord_path = os.path.join(data_dir, 'rodent_dataset.tfrecord')
-    coco_output_path = 'coco_annotations'  # Folder for COCO annotations
-    model_dir = 'models'
-    output_model_path = os.path.join(model_dir, 'rodent_model.pth')
+    # Directories and file paths
+    image_dir = 'data/images'
+    annotation_file = 'data/annotations/instances_default.json'
+    output_dir = 'outputs'
     
-    # Convert TFRecord to COCO
-    print(f"Converting TFRecord to COCO format: {tfrecord_path} -> {coco_output_path}")
-    parse_tfrecord_to_coco(tfrecord_path, coco_output_path, image_dir)
-
-    # Load dataset
-    dataset = RodentDataset(coco_output_path)
+    # Prepare dataset and dataloaders
+    dataset = RodentDataset(annotation_file, image_dir, transforms=ToTensor())
     data_loader = DataLoader(dataset, batch_size=2, shuffle=True, collate_fn=utils.collate_fn)
 
-    # Load pre-trained model (e.g., Faster R-CNN)
-    model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True)
-    in_features = model.roi_heads.box_predictor.cls_score.in_features
-    model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, 2)  # 2 classes: rodent and no_rodent
-
-    # Setup optimizer and device
+    # Set device
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
+    # Load model
+    model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True)
+    num_classes = 3  # Background + rodent + no_rodent
+    in_features = model.roi_heads.box_predictor.cls_score.in_features
+    model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, num_classes)
+
     model.to(device)
-    optimizer = optim.SGD(model.parameters(), lr=0.005, momentum=0.9, weight_decay=0.0005)
-    
-    # Training loop
-    num_epochs = 10
-    for epoch in range(num_epochs):
-        print(f"Epoch {epoch+1}/{num_epochs}")
+
+    # Optimizer
+    params = [p for p in model.parameters() if p.requires_grad]
+    optimizer = torch.optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
+
+    # Train the model
+    for epoch in range(10):
         train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
-        evaluate(model, data_loader, device=device)
-        
-    # Save the trained model
-    torch.save(model.state_dict(), output_model_path)
-    print(f"Model saved to {output_model_path}")
+        evaluate(model, data_loader, device)
+
+        # Save model after each epoch
+        torch.save(model.state_dict(), os.path.join(output_dir, f'model_epoch_{epoch}.pth'))
 
 if __name__ == "__main__":
     main()

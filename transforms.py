@@ -2,6 +2,15 @@
 import torch
 from torchvision.transforms import functional as F
 
+from torchvision import transforms
+
+class ToTensor:
+    def __call__(self, image, target):
+        # Convert image to Tensor
+        image = transforms.ToTensor()(image)
+        return image, target
+
+
 class Compose:
     def __init__(self, transforms):
         self.transforms = transforms
