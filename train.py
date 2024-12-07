@@ -1,26 +1,44 @@
+import torch
+import torchvision
+from torch.utils.data import DataLoader
 import os
-import tensorflow as tf
-from object_detection import model_lib_v2
+from datasets import RodentDataset
+from transforms import ToTensor
+from engine import train_one_epoch, evaluate
+import utils
 
-# Paths
-PROJECT_DIR = "/Users/ashish/Repos/pelsis-rodent"
-PIPELINE_CONFIG_PATH = os.path.join(PROJECT_DIR, "pipeline.config")
-MODEL_DIR = os.path.join(PROJECT_DIR, "models/trained_model")
+def main():
+    # Directories and file paths
+    image_dir = 'data/images'
+    annotation_file = 'data/annotations/instances_default.json'
+    output_dir = 'outputs'
+    
+    # Prepare dataset and dataloaders
+    dataset = RodentDataset(annotation_file, image_dir, transforms=ToTensor())
+    data_loader = DataLoader(dataset, batch_size=2, shuffle=True, collate_fn=utils.collate_fn)
 
-# Create model directory if it doesn't exist
-if not os.path.exists(MODEL_DIR):
-    os.makedirs(MODEL_DIR)
+    # Set device
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-def train_model():
-    print("Starting training...")
-    model_lib_v2.train_loop(
-        pipeline_config_path=PIPELINE_CONFIG_PATH,
-        model_dir=MODEL_DIR,
-        train_steps=None,
-        checkpoint_every_n=1000,
-        record_summaries=True
-    )
-    print("Training complete.")
+    # Load model
+    model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=True)
+    num_classes = 3  # Background + rodent + no_rodent
+    in_features = model.roi_heads.box_predictor.cls_score.in_features
+    model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, num_classes)
+
+    model.to(device)
+
+    # Optimizer
+    params = [p for p in model.parameters() if p.requires_grad]
+    optimizer = torch.optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
+
+    # Train the model
+    for epoch in range(10):
+        train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
+        evaluate(model, data_loader, device)
+
+        # Save model after each epoch
+        torch.save(model.state_dict(), os.path.join(output_dir, f'model_epoch_{epoch}.pth'))
 
 if __name__ == "__main__":
-    train_model()
+    main()
