@@ -1,180 +1,164 @@
-# Rodent Detection with Faster R-CNN
+Visual Wake-Up Word: Rodent Detection
+This project is a binary image classification system designed to detect the presence of a "rodent" in grayscale images. It uses a pre-trained model (MobileNetV2) with transfer learning and fine-tuning to classify images as either "rodent" or "not rodent". The model is trained on a dataset of grayscale images and can be deployed on low-powered edge devices using TensorFlow Lite.
 
-  
+Table of Contents
+Project Overview
 
-This repository contains the code for training and evaluating a rodent detection model using Faster R-CNN with a ResNet-50 backbone. The model is trained on custom rodent detection data and used for inference on new images. The project leverages PyTorch and Torchvision to implement the Faster R-CNN model.
+Directory Structure
 
-  
+Installation
 
-## Table of Contents
+Usage
 
-  
+Training the Model
 
-- [Rodent Detection with Faster R-CNN](#rodent-detection-with-faster-r-cnn)
-  - [Table of Contents](#table-of-contents)
-  - [Installation](#installation)
-  - [Usage](#usage)
-    - [Training](#training)
-    - [Inference](#inference)
-    - [Dataset](#dataset)
-      - [Model Details](#model-details)
-      - [Model Training](#model-training)
-      - [Inference](#inference-1)
-  - [Notes](#notes)
-  - [Licenses](#licenses)
+Classifying an Image
 
-  
+Model Details
 
-## Installation
+Results
 
-  
+License
 
- To get started, clone this repository and set up the necessary dependencies.
+Project Overview
+The goal of this project is to build a binary classifier that can detect the presence of a rodent in grayscale images. The system is designed to be lightweight and efficient, making it suitable for deployment on edge devices using TensorFlow Lite.
 
+Key Features
+Transfer Learning: Uses a pre-trained MobileNetV2 model for feature extraction.
 
+Fine-Tuning: Fine-tunes the model on a custom dataset of rodent and non-rodent images.
 
-  
+TensorFlow Lite Support: Converts the trained model to TensorFlow Lite for deployment on edge devices.
 
- 1. Clone the repository:
+Command-Line Interface: Provides a user-friendly CLI for training and inference.
 
-
-    git clone https://github.com/your-username/rodent-detection.git
-    
-    cd rodent-detection
- 2. Create a new Python virtual environment (optional but recommended):
-
-  
-    python3 -m venv venv
-    
-    source venv/bin/activate # On Windows, use venv\Scripts\activate
-
- 3. Install the required dependencies:
-
-    pip install -r requirements.txt
-
-The requirements.txt file should include essential libraries like PyTorch, Torchvision, OpenCV, and other dependencies.
-
-  
-
-## Usage
-
-### Training
-
-To train the rodent detection model, run the build.py script. This will load your training data, train the model, and save the trained weights to a specified directory.
-  
-
-    python build.py
-
-Arguments
-
-The script assumes the presence of a custom annotations file in COCO format (e.g., instances_default.json).
-
-The training data should be stored in the data/images directory.
-
-The model will be saved in the models/trained_model directory after each epoch.
-
-The script will output loss and other metrics during training. You can specify the batch size and other parameters directly in the script if needed.
-
-  
-
-### Inference
-
-To run inference and visualize the results, use the eval.py script. This script performs object detection on new images and saves the output images with bounding boxes. It also generates a CSV file with image names and the corresponding true and predicted labels.
-
-
-    python eval.py
-
-Arguments
-
-The script assumes that the trained model (model_epoch_X.pth) is available in the models/trained_model directory.
-
-The annotations file is loaded from data/instances_default.json (for inference, this is used to match file names).
-
-The script will output:
-
-Images with drawn bounding boxes saved in the outputs/ folder.
-
-A CSV file (predictions.csv) containing the image name, true label, and predicted label.
-
-Example CSV format:
-
-image_name,true_label,predicted_label
-
-img001.jpg,rodent,rodent
-
-img002.jpg,rodent,background
-
-Folder Structure
-
-The project has the following directory structure:
-
-
-rodent-detection/
-
+Directory Structure
+Copy
+visual-wake-up-word/
 ├── data/
+│   ├── rodent/                # Images of rodents
+│   └── not_rodent/            # Images without rodents
+├── models/                    # Saved models
+│   ├── rodent_classifier.h5   # TensorFlow model
+│   └── rodent_classifier.tflite # TensorFlow Lite model
+├── results/                   # Evaluation metrics and graphs
+│   ├── evaluation_metrics.txt # Test accuracy, loss, and AUC
+│   └── training_history.png   # Training/validation accuracy and loss graphs
+├── classify_image.py          # Script to classify a query image
+├── train_model.py             # Script to train the model
+└── README.md                  # Project documentation
+Installation
+Clone the Repository:
 
-│ ├── images/ # Image files used for training and inference
+bash
+Copy
+git clone https://github.com/your-username/visual-wake-up-word.git
+cd visual-wake-up-word
+Install Dependencies:
+Ensure you have Python 3.7 or higher installed. Then, install the required libraries:
 
-│ └── instances_default.json # COCO annotations for training
+bash
+Copy
+pip install tensorflow numpy matplotlib
+Prepare the Dataset:
 
-├── models/
+Place your rodent images in data/rodent/.
 
-│ └── trained_model/ # Directory to store trained model checkpoints
+Place your non-rodent images in data/not_rodent/.
 
-├── outputs/ # Directory to save images and results after inference
+Ensure all images are in grayscale and resized to 324x324 pixels.
 
-├── build.py # Training script
+Usage
+Training the Model
+To train the model, run the following command:
 
-├── eval.py # Inference script
+bash
+Copy
+python train_model.py
+This script will:
 
-├── utils.py # Utility functions (e.g., collate_fn)
+Load and preprocess the dataset.
 
-├── requirements.txt # List of Python dependencies
+Train the model using transfer learning and fine-tuning.
 
-└── README.md # This file
+Save the trained model to models/rodent_classifier.h5.
 
-### Dataset
+Convert the model to TensorFlow Lite and save it to models/rodent_classifier.tflite.
 
-The dataset used for this project is based on rodent detection, formatted in the COCO dataset format with annotations in instances_default.json. Each image in the dataset contains labeled bounding boxes corresponding to the rodent(s) in the image.
+Save evaluation metrics and training graphs to the results/ directory.
 
-  
+Classifying an Image
+To classify a query image, use the classify_image.py script. It supports both TensorFlow (.h5) and TensorFlow Lite (.tflite) models.
 
-images/ contains the image files.
+Usage
+bash
+Copy
+python classify_image.py <model_type> <image_path>
+Arguments
+<model_type>: Type of model to use (tf for TensorFlow or tflite for TensorFlow Lite).
 
-instances_default.json contains the annotations in COCO format, including bounding boxes and class labels.
+<image_path>: Path to the query image.
 
-Ensure your dataset is structured similarly before running the scripts.
+Examples
+Classify an image using the TensorFlow model:
 
-  
+bash
+Copy
+python classify_image.py tf path/to/your/query_image.jpg
+Classify an image using the TensorFlow Lite model:
 
-#### Model Details
+bash
+Copy
+python classify_image.py tflite path/to/your/query_image.jpg
+Output
+The script will print the classification result:
 
-This project uses Faster R-CNN with a ResNet-50 backbone for object detection. The model is trained to detect rodents (or background). You can customize the model to detect different objects by modifying the annotations and the number of classes.
+Copy
+The image is classified as: rodent
+Model Details
+Model Architecture
+Base Model: MobileNetV2 (pre-trained on ImageNet).
 
-  
+Custom Layers:
 
-#### Model Training
+Global Average Pooling.
 
-The model is initialized with pretrained weights from COCO and fine-tuned on the rodent dataset.
+Dense layer with 128 units and ReLU activation.
 
-The training script (build.py) handles the dataset preparation, model training, and saving checkpoints.
+Dropout layer with a rate of 0.5.
 
-#### Inference
+Output layer with a single unit and sigmoid activation for binary classification.
 
-The trained model is loaded from the specified checkpoint, and inference is run on images.
+Training Process
+Transfer Learning:
 
-Bounding boxes for detected objects are drawn on the images and saved to the outputs/ folder.
+The base model is frozen, and only the custom layers are trained.
 
-A CSV file with the predicted results is saved alongside the images.
+Fine-Tuning:
 
-## Notes
+The top layers of the base model are unfrozen, and the entire model is fine-tuned with a lower learning rate.
 
-The training script (build.py) may take a considerable amount of time depending on the dataset size and computational resources (GPU is recommended).
+Evaluation Metrics
+Test Accuracy: Accuracy of the model on the test set.
 
-Ensure that the dataset is formatted correctly and that the paths in the scripts point to the correct directories for your environment.
+Test AUC: Area under the ROC curve for the test set.
 
-The model currently supports binary classification: background and rodent. You can modify the code to support multi-class detection if needed.
+Results
+After training, the following files are saved in the results/ directory:
 
-## Licenses
+evaluation_metrics.txt:
 
+Contains test accuracy, loss, and AUC.
+
+training_history.png:
+
+Graphs of training/validation accuracy and loss over epochs.
+
+License
 This project is licensed under the MIT License. See the LICENSE file for details.
+
+Acknowledgments
+TensorFlow and Keras for providing the deep learning framework.
+
+MobileNetV2 for the pre-trained model architecture.
+
