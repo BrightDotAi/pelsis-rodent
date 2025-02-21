@@ -1,0 +1,10 @@
+item {
+  id: 1
+  name: 'no_rodent'
+}
+
+item {
+  id: 2
+  name: 'rodent'
+}
+
